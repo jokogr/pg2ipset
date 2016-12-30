@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
 		ifp = fopen(argv[1], "r");
 	}
 	if (!ifp) { perror("Could not open input file"); return -errno; }
-	
+
 	if (argc < 3 || !strcmp(argv[2], "-")) {
 		ofp = stdout;
 	} else {

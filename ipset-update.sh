@@ -15,7 +15,7 @@ COUNTRIES=(af ae ir iq tr cn sa sy ru ua hk id kz kw ly)
 # bluetack lists to use - they now obfuscate these so get them from
 # https://www.iblocklist.com/lists.php
 BLUETACKALIAS=(DShield Bogon Hijacked DROP ForumSpam WebExploit Ads Proxies BadSpiders CruzIT Zeus Palevo Malicious Malcode Adservers)
-BLUETACK=(xpbqleszmajjesnzddhv lujdnbasfaaixitgmxpp usrcshglbiilevmyfhse zbdlwrqkabxbcppvrnos ficutxiwawokxlcyoeye ghlzqtqxnzctvvajwwag dgxtneitpuvgqqcpfulq xoebmbyexwuiogmbyprb mcvxsnihddgutbjfbghy czvaehmjpsnwwttrdoyl ynkdjqsjyfmilsgbogqf erqajhwrxiuvjxqrrwfj npkuuhuxcsllnhoamkvm pbqcylkejciyhmwttify zhogegszwduurnvsyhdf) 
+BLUETACK=(xpbqleszmajjesnzddhv lujdnbasfaaixitgmxpp usrcshglbiilevmyfhse zbdlwrqkabxbcppvrnos ficutxiwawokxlcyoeye ghlzqtqxnzctvvajwwag dgxtneitpuvgqqcpfulq xoebmbyexwuiogmbyprb mcvxsnihddgutbjfbghy czvaehmjpsnwwttrdoyl ynkdjqsjyfmilsgbogqf erqajhwrxiuvjxqrrwfj npkuuhuxcsllnhoamkvm pbqcylkejciyhmwttify zhogegszwduurnvsyhdf)
 # ports to block tor users from
 PORTS=(80 443 6667 22 21)
 
@@ -40,7 +40,7 @@ IPTABLES=$(iptables-save)
 importList(){
   if [ -f $LISTDIR/$1.txt ] || [ -f $LISTDIR/$1.gz ]; then
 	echo "Importing $1 blocks..."
-	
+
 	ipset create -exist $1 hash:net maxelem 4294967295
 	ipset create -exist $1-TMP hash:net maxelem 4294967295
 	ipset flush $1-TMP &> /dev/null
@@ -51,10 +51,10 @@ importList(){
 	else
 		awk '!x[$0]++' $LISTDIR/$1.txt | grep  -v \# | grep -v ^$ |  grep -v 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore
 	fi
-	
+
 	ipset swap $1 $1-TMP &> /dev/null
 	ipset destroy $1-TMP &> /dev/null
-	
+
 	# only create if the iptables rules don't already exist
 	if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
           iptables -A INPUT -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked input $1"
@@ -77,17 +77,17 @@ if [ $ENABLE_BLUETACK = 1 ]; then
   # they are special in that they are gz compressed and require
   # pg2ipset to be inserted
   i=0
-  for list in ${BLUETACK[@]}; do  
+  for list in ${BLUETACK[@]}; do
 	if [ eval $(wget --quiet -O /tmp/${BLUETACKALIAS[i]}.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz) ]; then
 	  mv /tmp/${BLUETACKALIAS[i]}.gz $LISTDIR/${BLUETACKALIAS[i]}.gz
 	else
 	  echo "Using cached list for ${BLUETACKALIAS[i]}."
 	fi
-	
+
 	echo "Importing bluetack list ${BLUETACKALIAS[i]}..."
-  
+
 	importList ${BLUETACKALIAS[i]} 1
-	
+
 	i=$((i+1))
   done
 fi
@@ -100,7 +100,7 @@ if [ $ENABLE_COUNTRY = 1 ]; then
 	  rm /tmp/$country.txt
 	fi
   done
-  
+
   importList "countries" 0
 fi
 
@@ -114,8 +114,8 @@ if [ $ENABLE_TORBLOCK = 1 ]; then
 		rm /tmp/$port.txt
 	  fi
 	done
-  done 
-  
+  done
+
   importList "tor" 0
 fi
 
