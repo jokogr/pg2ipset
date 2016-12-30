@@ -119,6 +119,6 @@ if [ $ENABLE_TORBLOCK = 1 ]; then
   importList "tor" 0
 fi
 
-# add any custom import lists below
-# ex: importTextList "custom"
+# add any custom import lists below, e.g.
+# importTextList "custom"
 
