@@ -6,9 +6,6 @@
 # place to keep our cached blocklists
 LISTDIR="/var/cache/blocklists"
 
-# create cache directory for our lists if it isn't there
-[ ! -d $LISTDIR ] && mkdir $LISTDIR
-
 # countries to block, must be lcase
 COUNTRIES=(af ae ir iq tr cn sa sy ru ua hk id kz kw ly)
 
@@ -71,6 +68,16 @@ importList(){
 	echo "List $1.txt does not exist."
   fi
 }
+
+# create the list directory
+mkdir -p $LISTDIR
+[[ $? -ne 0 ]] && exit 1
+
+# check if the list directory is writable
+if [ ! -w "$LISTDIR" ]; then
+  echo "LISTDIR $LISTDIR is not writable" 1>&2
+  exit 1
+fi
 
 if [ $ENABLE_BLUETACK = 1 ]; then
   # get, parse, and import the bluetack lists
