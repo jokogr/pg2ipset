@@ -31,8 +31,15 @@ ENABLE_COUNTRY=0
 # enable tor blocks?
 ENABLE_TORBLOCK=1
 
-#cache a copy of the iptables rules
-IPTABLES=$(iptables-save)
+chain_exists () {
+  [ $# -lt 1 -o $# -gt 2 ] && {
+    echo "Usage: chain_exists <chain_name> [table]" >&2
+        return 1
+  }
+  local chain_name="$1" ; shift
+  [ $# -eq 1 ] && local table="--table $1"
+  iptables $table -n --list "$chain_name" >/dev/null 2>&1
+}
 
 importList(){
   if [ -f $LISTDIR/$1.txt ] || [ -f $LISTDIR/$1.gz ]; then
@@ -52,17 +59,20 @@ importList(){
 	ipset swap $1 $1-TMP &> /dev/null
 	ipset destroy $1-TMP &> /dev/null
 
-	# only create if the iptables rules don't already exist
-	if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
-          iptables -A INPUT -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked input $1"
-          iptables -A FORWARD -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked fwd $1"
-          iptables -A FORWARD -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked fwd $1"
-          iptables -A OUTPUT -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked out $1"
+	# only create chains and rules if they do not exist
+  if ! iptables -C pg-in -m set --match-set "$1" src -j DROP >/dev/null 2>&1; then
+    chain_exists pg-in || iptables -N pg-in
+    iptables -A pg-in -m set --match-set $1 src -j NFLOG --nflog-prefix "PG blocked input $1"
+    iptables -A pg-in -m set --match-set $1 src -j DROP
 
-	  iptables -A INPUT -m set --match-set $1 src -j DROP
-	  iptables -A FORWARD -m set --match-set $1 src -j DROP
-	  iptables -A FORWARD -m set --match-set $1 dst -j REJECT
-	  iptables -A OUTPUT -m set --match-set $1 dst -j REJECT
+    chain_exists pg-fwd || iptables -N pg-fwd
+    iptables -A pg-fwd -m set --match-set $1 src -j NFLOG --nflog-prefix "PG blocked fwd $1"
+    iptables -A pg-fwd -m set --match-set $1 src -j DROP
+    iptables -A pg-fwd -m set --match-set $1 dst -j NFLOG --nflog-prefix "PG blocked fwd $1"
+
+    chain_exists pg-out || iptables -N pg-out
+    iptables -A pg-out -m set --match-set $1 dst -j NFLOG --nflog-prefix "PG blocked out $1"
+    iptables -A pg-out -m set --match-set $1 dst -j REJECT
 	fi
   else
 	echo "List $1.txt does not exist."
