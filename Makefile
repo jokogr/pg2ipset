@@ -1,3 +1,6 @@
+PREFIX?=/usr/local
+DESTDIR?=
+
 all: build
 
 build:
@@ -7,4 +10,4 @@ clean:
 	rm pg2ipset
 
 install:
-	install pg2ipset /usr/bin/pg2ipset
+	install pg2ipset ${DESTDIR}${PREFIX}/bin/pg2ipset
